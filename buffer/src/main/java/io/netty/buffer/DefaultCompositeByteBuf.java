@@ -1247,13 +1247,14 @@ public class DefaultCompositeByteBuf extends AbstractByteBuf implements Composit
             ByteBuf firstByteBuf = firstComponent.buf;
             int firstIndex = index - firstComponent.offset;
             int firstLength = firstByteBuf.capacity() - firstIndex;
-            array[firstComponentAt] = firstByteBuf.unsafe().nioReadBuffer(firstIndex, firstLength);
+            array[0] = firstByteBuf.unsafe().nioReadBuffer(firstIndex, firstLength);
 
             // prepare intermediate component NIO buffers
             for (int componentAt = firstComponentAt + 1; componentAt < lastComponentAt; componentAt++) {
                 Component component = components.get(componentAt);
                 ByteBuf byteBuf = component.buf;
-                array[componentAt] = byteBuf.unsafe().nioReadBuffer(0, byteBuf.capacity());
+                int arrayIndex = componentAt - firstComponentAt;
+                array[arrayIndex] = byteBuf.unsafe().nioReadBuffer(0, byteBuf.capacity());
             }
 
             // prepare last component NIO buffer
@@ -1261,7 +1262,8 @@ public class DefaultCompositeByteBuf extends AbstractByteBuf implements Composit
             ByteBuf lastByteBuf = lastComponent.buf;
             int lastIndex = (lastComponent == firstComponent) ? firstIndex : 0;
             int lastLength = index + length - lastComponent.offset;
-            array[lastComponentAt] = lastByteBuf.unsafe().nioReadBuffer(lastIndex, lastLength);
+            int lastArrayIndex = lastComponentAt - firstComponentAt;
+            array[lastArrayIndex] = lastByteBuf.unsafe().nioReadBuffer(lastIndex, lastLength);
 
             return array;
         }
@@ -1287,13 +1289,14 @@ public class DefaultCompositeByteBuf extends AbstractByteBuf implements Composit
             ByteBuf firstByteBuf = firstComponent.buf;
             int firstIndex = index - firstComponent.offset;
             int firstLength = firstByteBuf.capacity() - firstIndex;
-            array[firstComponentAt] = firstByteBuf.unsafe().nioWriteBuffer(firstIndex, firstLength);
+            array[0] = firstByteBuf.unsafe().nioWriteBuffer(firstIndex, firstLength);
 
             // prepare intermediate component NIO buffers
             for (int componentAt = firstComponentAt + 1; componentAt < lastComponentAt; componentAt++) {
                 Component component = components.get(componentAt);
                 ByteBuf byteBuf = component.buf;
-                array[componentAt] = byteBuf.unsafe().nioWriteBuffer(0, byteBuf.capacity());
+                int arrayIndex = componentAt - firstComponentAt;
+                array[arrayIndex] = byteBuf.unsafe().nioWriteBuffer(0, byteBuf.capacity());
             }
 
             // prepare last component NIO buffer
@@ -1301,7 +1304,8 @@ public class DefaultCompositeByteBuf extends AbstractByteBuf implements Composit
             ByteBuf lastByteBuf = lastComponent.buf;
             int lastIndex = (lastComponent == firstComponent) ? firstIndex : 0;
             int lastLength = index + length - lastComponent.offset;
-            array[lastComponentAt] = lastByteBuf.unsafe().nioWriteBuffer(lastIndex, lastLength);
+            int lastArrayIndex = lastComponentAt - firstComponentAt;
+            array[lastArrayIndex] = lastByteBuf.unsafe().nioWriteBuffer(lastIndex, lastLength);
 
             return array;
         }
