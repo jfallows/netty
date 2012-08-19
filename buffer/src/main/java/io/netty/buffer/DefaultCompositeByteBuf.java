@@ -1196,7 +1196,7 @@ public class DefaultCompositeByteBuf extends AbstractByteBuf implements Composit
     }
 
     private void ensureArrayStorageCapacity(int capacity) {
-        if (capacity > tmpBufs.length) {
+        if (tmpBufs == null || capacity > tmpBufs.length) {
             this.tmpBufs = new ByteBuffer[capacity];
         }
     }
