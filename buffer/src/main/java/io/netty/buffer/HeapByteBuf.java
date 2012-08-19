@@ -32,7 +32,8 @@ public class HeapByteBuf extends AbstractByteBuf {
     private final Unsafe unsafe = new HeapUnsafe();
 
     private byte[] array;
-    private ByteBuffer nioBuf;
+    private ByteBuffer nioReadBuf;
+    private ByteBuffer nioWriteBuf;
 
     /**
      * Creates a new heap buffer with a newly allocated byte array.
@@ -70,7 +71,8 @@ public class HeapByteBuf extends AbstractByteBuf {
 
     private void setArray(byte[] initialArray) {
         array = initialArray;
-        nioBuf = ByteBuffer.wrap(initialArray);
+        nioReadBuf = ByteBuffer.wrap(initialArray);
+        nioWriteBuf = ByteBuffer.wrap(initialArray);
     }
 
     @Override
@@ -158,7 +160,7 @@ public class HeapByteBuf extends AbstractByteBuf {
     @Override
     public int getBytes(int index, GatheringByteChannel out, int length)
             throws IOException {
-        return out.write((ByteBuffer) nioBuf.clear().position(index).limit(index + length));
+        return out.write((ByteBuffer) nioReadBuf.clear().position(index).limit(index + length));
     }
 
     @Override
@@ -193,7 +195,7 @@ public class HeapByteBuf extends AbstractByteBuf {
     @Override
     public int setBytes(int index, ScatteringByteChannel in, int length) throws IOException {
         try {
-            return in.read((ByteBuffer) nioBuf.clear().position(index).limit(index + length));
+            return in.read((ByteBuffer) nioWriteBuf.clear().position(index).limit(index + length));
         } catch (ClosedChannelException e) {
             return -1;
         }
@@ -303,12 +305,22 @@ public class HeapByteBuf extends AbstractByteBuf {
 
     private class HeapUnsafe implements Unsafe {
         @Override
-        public ByteBuffer nioBuffer() {
-            return nioBuf;
+        public ByteBuffer nioReadBuffer() {
+            return nioReadBuf;
         }
 
         @Override
-        public ByteBuffer[] nioBuffers(int index, int length) {
+        public ByteBuffer nioWriteBuffer() {
+            return nioWriteBuf;
+        }
+
+        @Override
+        public ByteBuffer[] nioReadBuffers(int index, int length) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ByteBuffer[] nioWriteBuffers(int index, int length) {
             throw new UnsupportedOperationException();
         }
 
@@ -351,7 +363,8 @@ public class HeapByteBuf extends AbstractByteBuf {
             refCnt --;
             if (refCnt == 0) {
                 array = null;
-                nioBuf = null;
+                nioReadBuf = null;
+                nioWriteBuf = null;
             }
         }
     }
