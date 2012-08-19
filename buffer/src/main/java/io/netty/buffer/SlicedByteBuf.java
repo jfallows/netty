@@ -303,7 +303,7 @@ public class SlicedByteBuf extends AbstractByteBuf implements WrappedByteBuf {
 
         @Override
         public ByteBuffer nioWriteBuffer() {
-            return buffer.unsafe().nioReadBuffer();
+            return buffer.unsafe().nioWriteBuffer();
         }
 
         @Override
