@@ -229,18 +229,28 @@ public class DuplicatedByteBuf extends AbstractByteBuf implements WrappedByteBuf
     private final class DuplicatedUnsafe implements Unsafe {
 
         @Override
-        public ByteBuffer nioBuffer() {
-            return buffer.unsafe().nioBuffer();
+        public ByteBuffer nioReadBuffer() {
+            return buffer.unsafe().nioReadBuffer();
         }
 
         @Override
-        public ByteBuffer[] nioBuffers(int index, int length) {
-            return buffer.unsafe().nioBuffers(index, length);
+        public ByteBuffer nioWriteBuffer() {
+            return buffer.unsafe().nioWriteBuffer();
+        }
+
+        @Override
+        public ByteBuffer[] nioReadBuffers(int index, int length) {
+            return buffer.unsafe().nioReadBuffers(index, length);
+        }
+
+        @Override
+        public ByteBuffer[] nioWriteBuffers(int index, int length) {
+            return buffer.unsafe().nioWriteBuffers(index, length);
         }
 
         @Override
         public int adjustment() {
-            return 0;
+            return buffer.unsafe().adjustment();
         }
 
         @Override

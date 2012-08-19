@@ -42,7 +42,8 @@ public class DefaultCompositeByteBuf extends AbstractByteBuf implements Composit
     private final List<Component> components = new ArrayList<Component>();
     private final int maxNumComponents;
     private final Unsafe unsafe = new CompositeUnsafe();
-    private ByteBuffer[] tmpBufs;
+    private ByteBuffer[] readBufs;
+    private ByteBuffer[] writeBufs;
 
     private Component lastAccessed;
     private int lastAccessedId;
@@ -1195,9 +1196,15 @@ public class DefaultCompositeByteBuf extends AbstractByteBuf implements Composit
         return result + ", components=" + components.size() + ")";
     }
 
-    private void ensureArrayStorageCapacity(int capacity) {
-        if (tmpBufs == null || capacity > tmpBufs.length) {
-            this.tmpBufs = new ByteBuffer[capacity];
+    private void ensureReadStorageCapacity(int capacity) {
+        if (readBufs == null || capacity > readBufs.length) {
+            this.readBufs = new ByteBuffer[capacity];
+        }
+    }
+
+    private void ensureWriteStorageCapacity(int capacity) {
+        if (writeBufs == null || capacity > writeBufs.length) {
+            this.writeBufs = new ByteBuffer[capacity];
         }
     }
 
@@ -1220,25 +1227,25 @@ public class DefaultCompositeByteBuf extends AbstractByteBuf implements Composit
 
     private final class CompositeUnsafe implements Unsafe {
         @Override
-        public ByteBuffer nioBuffer() {
+        public ByteBuffer nioReadBuffer() {
             if (components.size() == 1) {
-                return components.get(0).buf.unsafe().nioBuffer();
+                return components.get(0).buf.unsafe().nioReadBuffer();
             }
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public ByteBuffer[] nioBuffers(int index, int length) {
+        public ByteBuffer[] nioReadBuffers(int index, int length) {
             int firstComponentAt = toComponentIndex(index);
             int lastComponentAt = toComponentIndex(index + length - 1);
 
-            ensureArrayStorageCapacity(lastComponentAt - firstComponentAt + 1);
-            ByteBuffer[] array = tmpBufs;
+            ensureReadStorageCapacity(lastComponentAt - firstComponentAt + 1);
+            ByteBuffer[] array = readBufs;
 
             // prepare first component NIO buffer
             Component firstComponent = components.get(firstComponentAt);
             Unsafe firstBufferUnsafe = firstComponent.buf.unsafe();
-            ByteBuffer firstNioBuffer = firstBufferUnsafe.nioBuffer();
+            ByteBuffer firstNioBuffer = firstBufferUnsafe.nioReadBuffer();
             int firstAdjustment = firstBufferUnsafe.adjustment();
             int firstAdjustedPosition = readerIndex() - firstComponent.offset + firstAdjustment;
             int firstAdjustedLimit = firstComponent.endOffset + firstAdjustment;
@@ -1250,7 +1257,7 @@ public class DefaultCompositeByteBuf extends AbstractByteBuf implements Composit
                 Component component = components.get(componentAt);
                 ByteBuf buffer = component.buf;
                 Unsafe bufferUnsafe = buffer.unsafe();
-                ByteBuffer nioBuffer = bufferUnsafe.nioBuffer();
+                ByteBuffer nioBuffer = bufferUnsafe.nioReadBuffer();
                 nioBuffer.clear().position(bufferUnsafe.adjustment()).limit(buffer.capacity());
                 array[componentAt] = nioBuffer;
             }
@@ -1258,7 +1265,58 @@ public class DefaultCompositeByteBuf extends AbstractByteBuf implements Composit
             // prepare last component NIO buffer
             Component lastComponent = components.get(lastComponentAt);
             Unsafe lastBufferUnsafe = lastComponent.buf.unsafe();
-            ByteBuffer lastNioBuffer = lastBufferUnsafe.nioBuffer();
+            ByteBuffer lastNioBuffer = lastBufferUnsafe.nioReadBuffer();
+            int lastAdjustedLimit = readableBytes() - lastComponent.offset + lastBufferUnsafe.adjustment();
+            if (lastNioBuffer == firstNioBuffer) {
+                lastNioBuffer.limit(lastAdjustedLimit);
+            } else {
+                lastNioBuffer.clear().position(lastBufferUnsafe.adjustment()).limit(lastAdjustedLimit);
+            }
+            array[lastComponentAt] = lastNioBuffer;
+
+            return array;
+        }
+
+        @Override
+        public ByteBuffer nioWriteBuffer() {
+            if (components.size() == 1) {
+                return components.get(0).buf.unsafe().nioWriteBuffer();
+            }
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ByteBuffer[] nioWriteBuffers(int index, int length) {
+            int firstComponentAt = toComponentIndex(index);
+            int lastComponentAt = toComponentIndex(index + length - 1);
+
+            ensureWriteStorageCapacity(lastComponentAt - firstComponentAt + 1);
+            ByteBuffer[] array = writeBufs;
+
+            // prepare first component NIO buffer
+            Component firstComponent = components.get(firstComponentAt);
+            Unsafe firstBufferUnsafe = firstComponent.buf.unsafe();
+            ByteBuffer firstNioBuffer = firstBufferUnsafe.nioWriteBuffer();
+            int firstAdjustment = firstBufferUnsafe.adjustment();
+            int firstAdjustedPosition = readerIndex() - firstComponent.offset + firstAdjustment;
+            int firstAdjustedLimit = firstComponent.endOffset + firstAdjustment;
+            firstNioBuffer.clear().position(firstAdjustedPosition).limit(firstAdjustedLimit);
+            array[firstComponentAt] = firstNioBuffer;
+
+            // prepare intermediate component NIO buffers
+            for (int componentAt = firstComponentAt + 1; componentAt < lastComponentAt; componentAt++) {
+                Component component = components.get(componentAt);
+                ByteBuf buffer = component.buf;
+                Unsafe bufferUnsafe = buffer.unsafe();
+                ByteBuffer nioBuffer = bufferUnsafe.nioWriteBuffer();
+                nioBuffer.clear().position(bufferUnsafe.adjustment()).limit(buffer.capacity());
+                array[componentAt] = nioBuffer;
+            }
+
+            // prepare last component NIO buffer
+            Component lastComponent = components.get(lastComponentAt);
+            Unsafe lastBufferUnsafe = lastComponent.buf.unsafe();
+            ByteBuffer lastNioBuffer = lastBufferUnsafe.nioWriteBuffer();
             int lastAdjustedLimit = readableBytes() - lastComponent.offset + lastBufferUnsafe.adjustment();
             if (lastNioBuffer == firstNioBuffer) {
                 lastNioBuffer.limit(lastAdjustedLimit);
