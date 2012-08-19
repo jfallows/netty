@@ -189,8 +189,7 @@ public class AioSocketChannel extends AbstractAioChannel implements SocketChanne
                 javaChannel().write(buffers, 0, buffers.length, config.getReadTimeout(),
                         TimeUnit.MILLISECONDS, AioSocketChannel.this, GATHERING_WRITE_HANDLER);
             } else {
-                ByteBuffer buffer = buf.unsafe().nioWriteBuffer();
-                buffer.clear().position(buf.readerIndex()).limit(buf.writerIndex());
+                ByteBuffer buffer = buf.unsafe().nioWriteBuffer(buf.readerIndex(), buf.readableBytes());
                 javaChannel().write(buffer, config.getReadTimeout(), TimeUnit.MILLISECONDS,
                         this, WRITE_HANDLER);
             }
@@ -222,8 +221,7 @@ public class AioSocketChannel extends AbstractAioChannel implements SocketChanne
             javaChannel().read(buffers, 0, buffers.length, config.getWriteTimeout(),
                     TimeUnit.MILLISECONDS, AioSocketChannel.this, SCATTERING_READ_HANDLER);
         } else {
-            ByteBuffer buffer = byteBuf.unsafe().nioReadBuffer();
-            buffer.clear().position(byteBuf.writerIndex()).limit(byteBuf.capacity());
+            ByteBuffer buffer = byteBuf.unsafe().nioReadBuffer(byteBuf.writerIndex(), byteBuf.writableBytes());
             javaChannel().read(buffer, config.getWriteTimeout(), TimeUnit.MILLISECONDS,
                     AioSocketChannel.this, READ_HANDLER);
         }

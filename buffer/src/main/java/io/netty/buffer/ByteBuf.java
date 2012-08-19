@@ -1832,14 +1832,14 @@ public interface ByteBuf extends ChannelBuf, Comparable<ByteBuf> {
          *
          * @throws UnsupportedOperationException if the buffer has no internal NIO buffer
          */
-        ByteBuffer nioReadBuffer();
+        ByteBuffer nioReadBuffer(int index, int length);
 
         /**
          * Returns the internal NIO buffer that is reused for I/O.
          *
          * @throws UnsupportedOperationException if the buffer has no internal NIO buffer
          */
-        ByteBuffer nioWriteBuffer();
+        ByteBuffer nioWriteBuffer(int index, int length);
 
         /**
          * Returns the internal NIO buffer array that is reused for I/O.
@@ -1854,11 +1854,6 @@ public interface ByteBuf extends ChannelBuf, Comparable<ByteBuf> {
          * @throws UnsupportedOperationException if the buffer has no internal NIO buffer array
          */
         ByteBuffer[] nioWriteBuffers(int index, int length);
-
-        /**
-         * Returns the index adjustment.
-         */
-        int adjustment();
 
         /**
          * Returns a new buffer whose type is identical to the callee.

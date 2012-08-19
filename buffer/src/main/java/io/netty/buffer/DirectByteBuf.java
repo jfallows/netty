@@ -416,7 +416,8 @@ public class DirectByteBuf extends AbstractByteBuf {
 
     private class DirectUnsafe implements Unsafe {
         @Override
-        public ByteBuffer nioReadBuffer() {
+        public ByteBuffer nioReadBuffer(int index, int length) {
+            nioReadBuf.clear().position(index).limit(index + length);
             return nioReadBuf;
         }
 
@@ -426,18 +427,14 @@ public class DirectByteBuf extends AbstractByteBuf {
         }
 
         @Override
-        public ByteBuffer nioWriteBuffer() {
+        public ByteBuffer nioWriteBuffer(int index, int length) {
+            nioWriteBuf.clear().position(index).limit(index + length);
             return nioWriteBuf;
         }
 
         @Override
         public ByteBuffer[] nioWriteBuffers(int index, int length) {
             throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int adjustment() {
-            return 0;
         }
 
         @Override

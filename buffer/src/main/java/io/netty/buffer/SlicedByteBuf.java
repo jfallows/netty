@@ -297,13 +297,13 @@ public class SlicedByteBuf extends AbstractByteBuf implements WrappedByteBuf {
     private final class SlicedUnsafe implements Unsafe {
 
         @Override
-        public ByteBuffer nioReadBuffer() {
-            return buffer.unsafe().nioReadBuffer();
+        public ByteBuffer nioReadBuffer(int index, int length) {
+            return buffer.unsafe().nioReadBuffer(index + adjustment, length);
         }
 
         @Override
-        public ByteBuffer nioWriteBuffer() {
-            return buffer.unsafe().nioWriteBuffer();
+        public ByteBuffer nioWriteBuffer(int index, int length) {
+            return buffer.unsafe().nioWriteBuffer(index + adjustment, length);
         }
 
         @Override
@@ -314,11 +314,6 @@ public class SlicedByteBuf extends AbstractByteBuf implements WrappedByteBuf {
         @Override
         public ByteBuffer[] nioWriteBuffers(int index, int length) {
             return buffer.unsafe().nioWriteBuffers(index + adjustment, length);
-        }
-
-        @Override
-        public int adjustment() {
-            return adjustment;
         }
 
         @Override
