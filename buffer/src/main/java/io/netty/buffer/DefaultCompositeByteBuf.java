@@ -1245,7 +1245,7 @@ public class DefaultCompositeByteBuf extends AbstractByteBuf implements Composit
             // prepare first component NIO buffer
             Component firstComponent = components.get(firstComponentAt);
             ByteBuf firstByteBuf = firstComponent.buf;
-            int firstIndex = readerIndex() - firstComponent.offset;
+            int firstIndex = index - firstComponent.offset;
             int firstLength = firstByteBuf.capacity() - firstIndex;
             array[firstComponentAt] = firstByteBuf.unsafe().nioReadBuffer(firstIndex, firstLength);
 
@@ -1260,7 +1260,7 @@ public class DefaultCompositeByteBuf extends AbstractByteBuf implements Composit
             Component lastComponent = components.get(lastComponentAt);
             ByteBuf lastByteBuf = lastComponent.buf;
             int lastIndex = (lastComponent == firstComponent) ? firstIndex : 0;
-            int lastLength = writerIndex() - lastComponent.offset;
+            int lastLength = index + length - lastComponent.offset;
             array[lastComponentAt] = lastByteBuf.unsafe().nioReadBuffer(lastIndex, lastLength);
 
             return array;
@@ -1285,7 +1285,7 @@ public class DefaultCompositeByteBuf extends AbstractByteBuf implements Composit
             // prepare first component NIO buffer
             Component firstComponent = components.get(firstComponentAt);
             ByteBuf firstByteBuf = firstComponent.buf;
-            int firstIndex = readerIndex() - firstComponent.offset;
+            int firstIndex = index - firstComponent.offset;
             int firstLength = firstByteBuf.capacity() - firstIndex;
             array[firstComponentAt] = firstByteBuf.unsafe().nioWriteBuffer(firstIndex, firstLength);
 
@@ -1300,7 +1300,7 @@ public class DefaultCompositeByteBuf extends AbstractByteBuf implements Composit
             Component lastComponent = components.get(lastComponentAt);
             ByteBuf lastByteBuf = lastComponent.buf;
             int lastIndex = (lastComponent == firstComponent) ? firstIndex : 0;
-            int lastLength = writerIndex() - lastComponent.offset;
+            int lastLength = index + length - lastComponent.offset;
             array[lastComponentAt] = lastByteBuf.unsafe().nioWriteBuffer(lastIndex, lastLength);
 
             return array;
