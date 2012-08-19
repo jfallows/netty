@@ -265,7 +265,7 @@ public class SlicedByteBuf extends AbstractByteBuf implements WrappedByteBuf {
     @Override
     public ByteBuffer[] nioBuffers(int index, int length) {
         checkIndex(index, length);
-        return buffer.nioBuffers(index, length);
+        return buffer.nioBuffers(index + adjustment, length);
     }
 
     private void checkIndex(int index) {
@@ -298,12 +298,17 @@ public class SlicedByteBuf extends AbstractByteBuf implements WrappedByteBuf {
 
         @Override
         public ByteBuffer nioBuffer() {
-            return buffer.nioBuffer(adjustment, length);
+            return buffer.unsafe().nioBuffer();
         }
 
         @Override
-        public ByteBuffer[] nioBuffers() {
-            return buffer.nioBuffers(adjustment, length);
+        public ByteBuffer[] nioBuffers(int index, int length) {
+            return buffer.unsafe().nioBuffers(index + adjustment, length);
+        }
+
+        @Override
+        public int adjustment() {
+            return adjustment;
         }
 
         @Override

@@ -419,8 +419,13 @@ public class DirectByteBuf extends AbstractByteBuf {
         }
 
         @Override
-        public ByteBuffer[] nioBuffers() {
+        public ByteBuffer[] nioBuffers(int index, int length) {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int adjustment() {
+            return 0;
         }
 
         @Override

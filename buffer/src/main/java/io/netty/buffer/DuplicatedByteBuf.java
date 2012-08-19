@@ -234,8 +234,13 @@ public class DuplicatedByteBuf extends AbstractByteBuf implements WrappedByteBuf
         }
 
         @Override
-        public ByteBuffer[] nioBuffers() {
-            return buffer.unsafe().nioBuffers();
+        public ByteBuffer[] nioBuffers(int index, int length) {
+            return buffer.unsafe().nioBuffers(index, length);
+        }
+
+        @Override
+        public int adjustment() {
+            return 0;
         }
 
         @Override

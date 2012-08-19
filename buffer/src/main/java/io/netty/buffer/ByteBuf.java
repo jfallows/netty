@@ -1839,7 +1839,12 @@ public interface ByteBuf extends ChannelBuf, Comparable<ByteBuf> {
          *
          * @throws UnsupportedOperationException if the buffer has no internal NIO buffer array
          */
-        ByteBuffer[] nioBuffers();
+        ByteBuffer[] nioBuffers(int index, int length);
+
+        /**
+         * Returns the index adjustment.
+         */
+        int adjustment();
 
         /**
          * Returns a new buffer whose type is identical to the callee.
