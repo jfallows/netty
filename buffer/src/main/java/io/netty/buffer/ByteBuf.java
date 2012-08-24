@@ -1702,39 +1702,6 @@ public interface ByteBuf extends ChannelBuf, Comparable<ByteBuf> {
     ByteBuffer nioBuffer(int index, int length);
 
     /**
-     * Returns {@code true} if and only if {@link #nioBuffers()} method will not fail.
-     */
-    boolean hasNioBuffers();
-
-    /**
-     * Exposes this buffer's readable bytes as an NIO {@link ByteBuffer}'s.  The returned buffer
-     * shares the content with this buffer, while changing the position and limit of the returned
-     * NIO buffer does not affect the indexes and marks of this buffer. This method does not
-     * modify {@code readerIndex} or {@code writerIndex} of this buffer.  Please note that the
-     * returned NIO buffer will not see the changes of this buffer if this buffer is a dynamic
-     * buffer and it adjusted its capacity.
-     *
-     *
-     * @throws UnsupportedOperationException
-     *         if this buffer cannot create a {@link ByteBuffer} that shares the content with itself
-     */
-    ByteBuffer[] nioBuffers();
-
-    /**
-     * Exposes this buffer's bytes as an NIO {@link ByteBuffer}'s for the specified offset and length
-     * The returned buffer shares the content with this buffer, while changing the position and limit
-     * of the returned NIO buffer does not affect the indexes and marks of this buffer. This method does
-     * not modify {@code readerIndex} or {@code writerIndex} of this buffer.  Please note that the
-     * returned NIO buffer will not see the changes of this buffer if this buffer is a dynamic
-     * buffer and it adjusted its capacity.
-     *
-     *
-     * @throws UnsupportedOperationException
-     *         if this buffer cannot create a {@link ByteBuffer} that shares the content with itself
-     */
-    ByteBuffer[] nioBuffers(int offset, int length);
-
-    /**
      * Returns {@code true} if and only if this buffer has a backing byte array.
      * If this method returns true, you can safely call {@link #array()} and
      * {@link #arrayOffset()}.
@@ -1828,32 +1795,37 @@ public interface ByteBuf extends ChannelBuf, Comparable<ByteBuf> {
 
     interface Unsafe {
         /**
-         * Returns the internal NIO buffer that is reused for I/O.
-         *
-         * @throws UnsupportedOperationException if the buffer has no internal NIO buffer
+         * Returns the internal number of NIO buffers that are reused for I/O.
          */
-        ByteBuffer nioReadBuffer(int index, int length);
+        int nioBufferCount(int index, int length);
 
         /**
          * Returns the internal NIO buffer that is reused for I/O.
          *
          * @throws UnsupportedOperationException if the buffer has no internal NIO buffer
          */
-        ByteBuffer nioWriteBuffer(int index, int length);
+        ByteBuffer nioReadBuffer(int readerIndex, int readableBytes);
 
         /**
          * Returns the internal NIO buffer array that is reused for I/O.
          *
          * @throws UnsupportedOperationException if the buffer has no internal NIO buffer array
          */
-        ByteBuffer[] nioReadBuffers(int index, int length);
+        void nioReadBuffers(int readerIndex, int readableBytes, ByteBuffer[] dst, int dstOffset, int dstLength);
+
+        /**
+         * Returns the internal NIO buffer that is reused for I/O.
+         *
+         * @throws UnsupportedOperationException if the buffer has no internal NIO buffer
+         */
+        ByteBuffer nioWriteBuffer(int writerIndex, int writableBytes);
 
         /**
          * Returns the internal NIO buffer array that is reused for I/O.
          *
          * @throws UnsupportedOperationException if the buffer has no internal NIO buffer array
          */
-        ByteBuffer[] nioWriteBuffers(int index, int length);
+        void nioWriteBuffers(int writerIndex, int writableBytes, ByteBuffer[] src, int srcOffset, int srcLength);
 
         /**
          * Returns a new buffer whose type is identical to the callee.

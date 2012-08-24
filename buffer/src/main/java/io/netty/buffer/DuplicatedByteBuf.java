@@ -212,16 +212,6 @@ public class DuplicatedByteBuf extends AbstractByteBuf implements WrappedByteBuf
     }
 
     @Override
-    public boolean hasNioBuffers() {
-        return buffer.hasNioBuffers();
-    }
-
-    @Override
-    public ByteBuffer[] nioBuffers(int offset, int length) {
-        return buffer.nioBuffers(offset, length);
-    }
-
-    @Override
     public Unsafe unsafe() {
         return unsafe;
     }
@@ -229,8 +219,19 @@ public class DuplicatedByteBuf extends AbstractByteBuf implements WrappedByteBuf
     private final class DuplicatedUnsafe implements Unsafe {
 
         @Override
+        public int nioBufferCount(int index, int length) {
+            return buffer.unsafe().nioBufferCount(index, length);
+        }
+
+        @Override
         public ByteBuffer nioReadBuffer(int index, int length) {
             return buffer.unsafe().nioReadBuffer(index, length);
+        }
+
+        @Override
+        public void nioReadBuffers(int readerIndex, int readableBytes,
+                ByteBuffer[] dst, int dstOffset, int dstLength) {
+            buffer.unsafe().nioReadBuffers(readerIndex, readableBytes, dst, dstOffset, dstLength);
         }
 
         @Override
@@ -239,13 +240,9 @@ public class DuplicatedByteBuf extends AbstractByteBuf implements WrappedByteBuf
         }
 
         @Override
-        public ByteBuffer[] nioReadBuffers(int index, int length) {
-            return buffer.unsafe().nioReadBuffers(index, length);
-        }
-
-        @Override
-        public ByteBuffer[] nioWriteBuffers(int index, int length) {
-            return buffer.unsafe().nioWriteBuffers(index, length);
+        public void nioWriteBuffers(int writerIndex, int writableBytes,
+                ByteBuffer[] src, int srcOffset, int srcLength) {
+            buffer.unsafe().nioWriteBuffers(writerIndex, writableBytes, src, srcOffset, srcLength);
         }
 
         @Override

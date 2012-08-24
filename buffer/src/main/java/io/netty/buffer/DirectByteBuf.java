@@ -383,16 +383,6 @@ public class DirectByteBuf extends AbstractByteBuf {
     }
 
     @Override
-    public boolean hasNioBuffers() {
-        return false;
-    }
-
-    @Override
-    public ByteBuffer[] nioBuffers(int offset, int length) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public ByteBuf copy(int index, int length) {
         ByteBuffer src;
         try {
@@ -416,13 +406,19 @@ public class DirectByteBuf extends AbstractByteBuf {
 
     private class DirectUnsafe implements Unsafe {
         @Override
+        public int nioBufferCount(int index, int length) {
+            return 1;
+        }
+
+        @Override
         public ByteBuffer nioReadBuffer(int index, int length) {
             nioReadBuf.clear().position(index).limit(index + length);
             return nioReadBuf;
         }
 
         @Override
-        public ByteBuffer[] nioReadBuffers(int index, int length) {
+        public void nioReadBuffers(int readerIndex, int readableBytes,
+                ByteBuffer[] dst, int dstOffset, int dstLength) {
             throw new UnsupportedOperationException();
         }
 
@@ -433,7 +429,8 @@ public class DirectByteBuf extends AbstractByteBuf {
         }
 
         @Override
-        public ByteBuffer[] nioWriteBuffers(int index, int length) {
+        public void nioWriteBuffers(int writerIndex, int writableBytes,
+                ByteBuffer[] src, int srcOffset, int srcLength) {
             throw new UnsupportedOperationException();
         }
 

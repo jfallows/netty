@@ -257,17 +257,6 @@ public class SlicedByteBuf extends AbstractByteBuf implements WrappedByteBuf {
         return buffer.nioBuffer(index + adjustment, length);
     }
 
-    @Override
-    public boolean hasNioBuffers() {
-        return buffer.hasNioBuffers();
-    }
-
-    @Override
-    public ByteBuffer[] nioBuffers(int index, int length) {
-        checkIndex(index, length);
-        return buffer.nioBuffers(index + adjustment, length);
-    }
-
     private void checkIndex(int index) {
         if (index < 0 || index >= capacity()) {
             throw new IndexOutOfBoundsException("Invalid index: " + index
@@ -297,8 +286,19 @@ public class SlicedByteBuf extends AbstractByteBuf implements WrappedByteBuf {
     private final class SlicedUnsafe implements Unsafe {
 
         @Override
+        public int nioBufferCount(int index, int length) {
+            return buffer.unsafe().nioBufferCount(index + adjustment, length);
+        }
+
+        @Override
         public ByteBuffer nioReadBuffer(int index, int length) {
             return buffer.unsafe().nioReadBuffer(index + adjustment, length);
+        }
+
+        @Override
+        public void nioReadBuffers(int readerIndex, int readableBytes,
+                ByteBuffer[] dst, int dstOffset, int dstLength) {
+            buffer.unsafe().nioReadBuffers(readerIndex, readableBytes, dst, dstOffset, dstLength);
         }
 
         @Override
@@ -307,13 +307,9 @@ public class SlicedByteBuf extends AbstractByteBuf implements WrappedByteBuf {
         }
 
         @Override
-        public ByteBuffer[] nioReadBuffers(int index, int length) {
-            return buffer.unsafe().nioReadBuffers(index + adjustment, length);
-        }
-
-        @Override
-        public ByteBuffer[] nioWriteBuffers(int index, int length) {
-            return buffer.unsafe().nioWriteBuffers(index + adjustment, length);
+        public void nioWriteBuffers(int writerIndex, int writableBytes,
+                ByteBuffer[] src, int srcOffset, int srcLength) {
+            buffer.unsafe().nioWriteBuffers(writerIndex, writableBytes, src, srcOffset, srcLength);
         }
 
         @Override
