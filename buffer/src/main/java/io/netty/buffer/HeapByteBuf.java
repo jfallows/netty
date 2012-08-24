@@ -212,16 +212,6 @@ public class HeapByteBuf extends AbstractByteBuf {
     }
 
     @Override
-    public boolean hasNioBuffers() {
-        return false;
-    }
-
-    @Override
-    public ByteBuffer[] nioBuffers(int offset, int length) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public short getShort(int index) {
         return (short) (array[index] << 8 | array[index + 1] & 0xFF);
     }
@@ -305,9 +295,20 @@ public class HeapByteBuf extends AbstractByteBuf {
 
     private class HeapUnsafe implements Unsafe {
         @Override
+        public int nioBufferCount(int index, int length) {
+            return 1;
+        }
+
+        @Override
         public ByteBuffer nioReadBuffer(int index, int length) {
             nioReadBuf.clear().position(index).limit(index + length);
             return nioReadBuf;
+        }
+
+        @Override
+        public void nioReadBuffers(int readerIndex, int readableBytes,
+                ByteBuffer[] dst, int dstOffset, int dstLength) {
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -317,12 +318,8 @@ public class HeapByteBuf extends AbstractByteBuf {
         }
 
         @Override
-        public ByteBuffer[] nioReadBuffers(int index, int length) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public ByteBuffer[] nioWriteBuffers(int index, int length) {
+        public void nioWriteBuffers(int writerIndex, int writableBytes,
+                ByteBuffer[] src, int srcOffset, int srcLength) {
             throw new UnsupportedOperationException();
         }
 

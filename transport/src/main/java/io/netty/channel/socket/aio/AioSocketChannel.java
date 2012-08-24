@@ -26,6 +26,8 @@ import io.netty.channel.socket.SocketChannel;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousChannelGroup;
 import java.nio.channels.AsynchronousSocketChannel;
@@ -56,6 +58,9 @@ public class AioSocketChannel extends AbstractAioChannel implements SocketChanne
 
     private final AioSocketChannelConfig config;
     private boolean flushing;
+
+    private ByteBuffer[] readBuffers;
+    private ByteBuffer[] writeBuffers;
 
     private final AtomicBoolean readSuspended = new AtomicBoolean();
     private final AtomicBoolean readInProgress = new AtomicBoolean();
@@ -184,14 +189,27 @@ public class AioSocketChannel extends AbstractAioChannel implements SocketChanne
         buf.discardReadBytes();
 
         if (buf.readable()) {
-            if (buf.hasNioBuffers()) {
-                ByteBuffer[] buffers = buf.unsafe().nioWriteBuffers(buf.readerIndex(), buf.readableBytes());
-                javaChannel().write(buffers, 0, buffers.length, config.getReadTimeout(),
-                        TimeUnit.MILLISECONDS, AioSocketChannel.this, GATHERING_WRITE_HANDLER);
-            } else {
-                ByteBuffer buffer = buf.unsafe().nioWriteBuffer(buf.readerIndex(), buf.readableBytes());
+            int readerIndex = buf.readerIndex();
+            int readableBytes = buf.readableBytes();
+            int bufferCount = buf.unsafe().nioBufferCount(readerIndex, readableBytes);
+            switch (bufferCount) {
+            case 0:
+                throw new BufferUnderflowException();
+            case 1:
+                ByteBuffer buffer = buf.unsafe().nioWriteBuffer(readerIndex, readableBytes);
                 javaChannel().write(buffer, config.getReadTimeout(), TimeUnit.MILLISECONDS,
                         this, WRITE_HANDLER);
+                break;
+            default:
+                // cache last used write buffers array on channel
+                ByteBuffer[] buffers = writeBuffers;
+                if (buffers == null || buffers.length < bufferCount) {
+                    buffers = writeBuffers = new ByteBuffer[bufferCount];
+                }
+                buf.unsafe().nioWriteBuffers(readerIndex, readableBytes, buffers, 0, bufferCount);
+                javaChannel().write(buffers, 0, bufferCount, config.getReadTimeout(),
+                        TimeUnit.MILLISECONDS, AioSocketChannel.this, GATHERING_WRITE_HANDLER);
+                break;
             }
         } else {
             notifyFlushFutures();
@@ -216,14 +234,27 @@ public class AioSocketChannel extends AbstractAioChannel implements SocketChanne
             expandReadBuffer(byteBuf);
         }
 
-        if (byteBuf.hasNioBuffers()) {
-            ByteBuffer[] buffers = byteBuf.unsafe().nioReadBuffers(byteBuf.writerIndex(), byteBuf.writableBytes());
-            javaChannel().read(buffers, 0, buffers.length, config.getWriteTimeout(),
-                    TimeUnit.MILLISECONDS, AioSocketChannel.this, SCATTERING_READ_HANDLER);
-        } else {
-            ByteBuffer buffer = byteBuf.unsafe().nioReadBuffer(byteBuf.writerIndex(), byteBuf.writableBytes());
+        int writerIndex = byteBuf.writerIndex();
+        int writableBytes = byteBuf.writableBytes();
+        int bufferCount = byteBuf.unsafe().nioBufferCount(writerIndex, writableBytes);
+        switch (bufferCount) {
+        case 0:
+            throw new BufferOverflowException();
+        case 1:
+            ByteBuffer buffer = byteBuf.unsafe().nioReadBuffer(writerIndex, writableBytes);
             javaChannel().read(buffer, config.getWriteTimeout(), TimeUnit.MILLISECONDS,
                     AioSocketChannel.this, READ_HANDLER);
+            break;
+        default:
+            // cache last used read buffers array on channel
+            ByteBuffer[] buffers = readBuffers;
+            if (buffers == null || buffers.length < bufferCount) {
+                buffers = readBuffers = new ByteBuffer[bufferCount];
+            }
+            byteBuf.unsafe().nioReadBuffers(writerIndex, writableBytes, buffers, 0, bufferCount);
+            javaChannel().read(buffers, 0, bufferCount, config.getWriteTimeout(),
+                    TimeUnit.MILLISECONDS, AioSocketChannel.this, SCATTERING_READ_HANDLER);
+            break;
         }
     }
 
